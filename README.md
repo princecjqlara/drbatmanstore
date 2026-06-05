@@ -111,7 +111,7 @@ The current `bot.py` runs Telegram long polling, which needs an always-on Python
 
 Vercel Hobby cron jobs are useful for daily maintenance tasks only. They are not a keep-alive solution for a polling Telegram bot.
 
-`store_db.json` is good for local testing. For Vercel production, store live orders, customers, messages, receipts, and products in an external database such as Supabase because function filesystems are not persistent application storage.
+`store_db.json` is used only when Supabase is not configured. For Vercel production, set Supabase env vars so live orders, customers, messages, receipts, and products persist outside the function filesystem.
 
 This repo includes `app.py` as the Vercel Flask entrypoint. After deployment, the dashboard should open at your Vercel domain root.
 
@@ -123,7 +123,39 @@ For Telegram webhook mode on Vercel, set these environment variables in Vercel:
 - `DASHBOARD_SECRET_KEY`
 - `TELEGRAM_WEBHOOK_PATH_SECRET`
 - `TELEGRAM_WEBHOOK_SECRET`
-- Cloudinary variables
+- `CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_STORE_STATE_ID`
+
+Create this table in the Supabase SQL editor:
+
+```sql
+create table if not exists public.store_state (
+  id text primary key,
+  data jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
+create or replace function public.touch_store_state_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+drop trigger if exists touch_store_state_updated_at on public.store_state;
+
+create trigger touch_store_state_updated_at
+before update on public.store_state
+for each row
+execute function public.touch_store_state_updated_at();
+```
 
 Then set the webhook URL:
 
@@ -146,13 +178,13 @@ During product creation, the dashboard form includes:
 
 Upsell IDs are optional. If left blank, the bot suggests other available active products automatically.
 
-Payment methods and wallet addresses are stored in `store_db.json` after first dashboard load. `PAYMENT_METHODS` in `.env` is only a startup fallback/migration source.
+Payment methods, wallet addresses, contact links, community links, products, customer messages, orders, receipts, and vouches are stored in Supabase when `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set.
 
-New active products and restocks automatically notify known users. Known users are collected when they interact with the bot or when they already have carts/orders in `store_db.json`.
+New active products and restocks automatically notify known users. Known users are collected when they interact with the bot or when they already have carts/orders in storage.
 
 Abandoned-cart follow-ups run inside the bot process. Configure interval, max follow-ups, and message sequence in `Bot Engagement`; customers who have automatic updates disabled are skipped.
 
-Supabase connection values can be stored in `.env`, but this version still uses `store_db.json` for live bot/dashboard data. Treat `SUPABASE_SERVICE_ROLE_KEY` as private server-only secret.
+Treat `SUPABASE_SERVICE_ROLE_KEY` as a private server-only secret. Do not expose it in client-side code.
 
 ## Customer Flow
 
@@ -171,4 +203,4 @@ Customers can:
 
 ## Storage
 
-The bot stores data in `store_db.json` by default. Back this file up if you run the bot in production.
+The bot stores data in Supabase when Supabase env vars are set. Without Supabase, it falls back to `store_db.json` for local testing.

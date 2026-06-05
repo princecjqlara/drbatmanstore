@@ -19,6 +19,8 @@ from dotenv import load_dotenv
 from flask import Flask, abort, flash, jsonify, redirect, render_template_string, request, session, url_for
 from telegram import Update as TelegramUpdate
 
+from storage import load_store_state, save_store_state, supabase_configured
+
 
 load_dotenv()
 
@@ -301,10 +303,14 @@ def default_data() -> dict[str, Any]:
 
 
 def load_data() -> dict[str, Any]:
-    if not DB_PATH.exists():
-        save_data(default_data())
-    with DB_PATH.open("r", encoding="utf-8-sig") as db_file:
-        data = json.load(db_file)
+    remote_data = load_store_state(default_data(), DB_PATH)
+    if remote_data is not None:
+        data = remote_data
+    else:
+        if not DB_PATH.exists():
+            save_data(default_data())
+        with DB_PATH.open("r", encoding="utf-8-sig") as db_file:
+            data = json.load(db_file)
     changed = False
     settings_missing = "settings" not in data
     for key, value in default_data().items():
@@ -426,6 +432,9 @@ def load_data() -> dict[str, Any]:
 
 
 def save_data(data: dict[str, Any]) -> None:
+    if supabase_configured():
+        save_store_state(data)
+        return
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     fd, temp_name = tempfile.mkstemp(prefix=DB_PATH.name, suffix=".tmp", dir=DB_PATH.parent or ".")
     try:

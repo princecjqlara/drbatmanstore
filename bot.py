@@ -29,6 +29,8 @@ from telegram.ext import (
     filters,
 )
 
+from storage import load_store_state, save_store_state, supabase_configured
+
 
 logger = logging.getLogger(__name__)
 
@@ -174,11 +176,15 @@ class StoreDB:
         self.load()
 
     def load(self) -> None:
-        if not self.path.exists():
-            self.save()
-            return
         with self.lock:
-            loaded = json.loads(self.path.read_text(encoding="utf-8-sig"))
+            remote_data = load_store_state(self.data, self.path)
+            if remote_data is not None:
+                loaded = remote_data
+            elif not self.path.exists():
+                self.save()
+                return
+            else:
+                loaded = json.loads(self.path.read_text(encoding="utf-8-sig"))
             self.data.update(loaded)
             self.data.setdefault("users", {})
             self.data.setdefault("settings", {})
@@ -203,6 +209,9 @@ class StoreDB:
 
     def save(self) -> None:
         with self.lock:
+            if supabase_configured():
+                save_store_state(self.data)
+                return
             self.path.parent.mkdir(parents=True, exist_ok=True)
             fd, temp_name = tempfile.mkstemp(prefix=self.path.name, suffix=".tmp", dir=self.path.parent or ".")
             try:
