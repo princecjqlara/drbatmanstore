@@ -113,6 +113,26 @@ Vercel Hobby cron jobs are useful for daily maintenance tasks only. They are not
 
 `store_db.json` is good for local testing. For Vercel production, store live orders, customers, messages, receipts, and products in an external database such as Supabase because function filesystems are not persistent application storage.
 
+This repo includes `app.py` as the Vercel Flask entrypoint. After deployment, the dashboard should open at your Vercel domain root.
+
+For Telegram webhook mode on Vercel, set these environment variables in Vercel:
+
+- `BOT_TOKEN`
+- `ADMIN_IDS`
+- `DASHBOARD_PASSWORD`
+- `DASHBOARD_SECRET_KEY`
+- `TELEGRAM_WEBHOOK_PATH_SECRET`
+- `TELEGRAM_WEBHOOK_SECRET`
+- Cloudinary variables
+
+Then set the webhook URL:
+
+```text
+https://api.telegram.org/bot<BOT_TOKEN>/setWebhook?url=https://your-project.vercel.app/telegram/webhook/<TELEGRAM_WEBHOOK_PATH_SECRET>&secret_token=<TELEGRAM_WEBHOOK_SECRET>
+```
+
+Do not run `bot.py` polling and webhook mode against the same bot token at the same time.
+
 During product creation, the dashboard form includes:
 
 - Name

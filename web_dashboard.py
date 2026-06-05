@@ -1,5 +1,6 @@
 ﻿import hmac
 import json
+import asyncio
 import os
 import tempfile
 import time
@@ -11,10 +12,12 @@ from datetime import datetime, timezone
 from functools import wraps
 from hashlib import sha1
 from pathlib import Path
+from threading import RLock
 from typing import Any
 
 from dotenv import load_dotenv
-from flask import Flask, flash, jsonify, redirect, render_template_string, request, session, url_for
+from flask import Flask, abort, flash, jsonify, redirect, render_template_string, request, session, url_for
+from telegram import Update as TelegramUpdate
 
 
 load_dotenv()
@@ -29,6 +32,8 @@ CLOUDINARY_URL = os.getenv("CLOUDINARY_URL", "").strip()
 CLOUDINARY_CLOUD_NAME = os.getenv("CLOUDINARY_CLOUD_NAME", "").strip()
 CLOUDINARY_API_KEY = os.getenv("CLOUDINARY_API_KEY", "").strip()
 CLOUDINARY_API_SECRET = os.getenv("CLOUDINARY_API_SECRET", "").strip()
+TELEGRAM_WEBHOOK_SECRET = os.getenv("TELEGRAM_WEBHOOK_SECRET", "").strip()
+TELEGRAM_WEBHOOK_PATH_SECRET = os.getenv("TELEGRAM_WEBHOOK_PATH_SECRET", "").strip()
 
 ORDER_STATUSES = {
     "pending_payment": "Pending payment",
@@ -134,6 +139,32 @@ DEFAULT_DATA = {
 
 app = Flask(__name__)
 app.secret_key = DASHBOARD_SECRET_KEY
+_telegram_application = None
+_telegram_loop = asyncio.new_event_loop()
+_telegram_lock = RLock()
+
+
+async def telegram_application():
+    global _telegram_application
+    if _telegram_application is None:
+        from bot import build_application
+
+        application = build_application()
+        await application.initialize()
+        await application.start()
+        _telegram_application = application
+    return _telegram_application
+
+
+def run_telegram_webhook(payload: dict[str, Any]) -> None:
+    async def process_payload() -> None:
+        application = await telegram_application()
+        update = TelegramUpdate.de_json(payload, application.bot)
+        if update:
+            await application.process_update(update)
+
+    with _telegram_lock:
+        _telegram_loop.run_until_complete(process_payload())
 
 
 def now_iso() -> str:
@@ -1396,6 +1427,22 @@ def render_page(title: str, content_template: str, auto_refresh_seconds: int = 0
         authed=session.get("dashboard_authed"),
         auto_refresh_seconds=auto_refresh_seconds,
     )
+
+
+@app.route("/telegram/webhook/<path_secret>", methods=["POST"])
+def telegram_webhook(path_secret: str):
+    expected_path_secret = TELEGRAM_WEBHOOK_PATH_SECRET or (BOT_TOKEN.split(":", 1)[0] if BOT_TOKEN else "")
+    if expected_path_secret and not hmac.compare_digest(path_secret, expected_path_secret):
+        abort(404)
+    if TELEGRAM_WEBHOOK_SECRET:
+        request_secret = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
+        if not hmac.compare_digest(request_secret, TELEGRAM_WEBHOOK_SECRET):
+            abort(403)
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        abort(400)
+    run_telegram_webhook(payload)
+    return "ok"
 
 
 @app.route("/login", methods=["GET", "POST"])
