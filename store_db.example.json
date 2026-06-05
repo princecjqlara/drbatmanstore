@@ -1,0 +1,109 @@
+{
+  "products": {
+    "DEMOCORE": {
+      "id": "DEMOCORE",
+      "name": "Starter Access Pack",
+      "description": "A clean entry pack for new customers who want the basics ready fast. Good first choice before adding upgrades.",
+      "price_credits": 19,
+      "stock": 10,
+      "warranty_days": 7,
+      "subscription_days": 30,
+      "upsell_ids": ["DEMOBOOST", "DEMOGUARD", "DEMODISC"],
+      "active": true,
+      "created_at": "2026-06-05T18:10:00+00:00",
+      "updated_at": "2026-06-05T18:10:00+00:00",
+      "highlight_rank": 1
+    },
+    "DEMOPACK": {
+      "id": "DEMOPACK",
+      "name": "Premium Bundle",
+      "description": "A larger bundle for customers who already know they want the complete setup in one checkout.",
+      "price_credits": 49,
+      "stock": 8,
+      "warranty_days": 14,
+      "subscription_days": 60,
+      "upsell_ids": ["DEMOBOOST", "DEMOGUARD"],
+      "active": true,
+      "created_at": "2026-06-05T18:12:00+00:00",
+      "updated_at": "2026-06-05T18:12:00+00:00",
+      "highlight_rank": 2
+    },
+    "DEMOBOOST": {
+      "id": "DEMOBOOST",
+      "name": "Priority Setup Add-On",
+      "description": "Adds faster handling and setup priority. Best for customers who want admin to process everything with extra attention.",
+      "price_credits": 9,
+      "stock": 18,
+      "warranty_days": 3,
+      "subscription_days": 0,
+      "upsell_ids": ["DEMOPACK", "DEMOGUARD"],
+      "active": true,
+      "created_at": "2026-06-05T18:11:00+00:00",
+      "updated_at": "2026-06-05T18:11:00+00:00",
+      "highlight_rank": 0
+    },
+    "DEMOGUARD": {
+      "id": "DEMOGUARD",
+      "name": "Warranty Boost",
+      "description": "Extends coverage for customers who want extra peace of mind after checkout.",
+      "price_credits": 7,
+      "stock": 29,
+      "warranty_days": 21,
+      "subscription_days": 0,
+      "upsell_ids": ["DEMOBOOST"],
+      "active": true,
+      "created_at": "2026-06-05T18:13:00+00:00",
+      "updated_at": "2026-06-05T18:13:00+00:00",
+      "highlight_rank": 0
+    },
+    "DEMODISC": {
+      "id": "DEMODISC",
+      "name": "Setup Guide",
+      "description": "A simple support guide add-on with extra instructions for customers who like everything written out.",
+      "price_credits": 5,
+      "stock": 25,
+      "warranty_days": 0,
+      "subscription_days": 0,
+      "upsell_ids": ["DEMOBOOST"],
+      "active": true,
+      "created_at": "2026-06-05T18:14:00+00:00",
+      "updated_at": "2026-06-05T18:14:00+00:00",
+      "highlight_rank": 0
+    },
+    "DEMOOUT": {
+      "id": "DEMOOUT",
+      "name": "Limited Drop",
+      "description": "A demo product that is currently sold out. Customers can still open this page to inspect details, but checkout is blocked until restock.",
+      "price_credits": 29,
+      "stock": 0,
+      "warranty_days": 7,
+      "subscription_days": 30,
+      "upsell_ids": ["DEMOCORE", "DEMOPACK"],
+      "active": true,
+      "created_at": "2026-06-05T18:15:00+00:00",
+      "updated_at": "2026-06-05T18:15:00+00:00",
+      "highlight_rank": 0
+    }
+  },
+  "carts": {},
+  "orders": {},
+  "users": {},
+  "settings": {
+    "payment_methods": [],
+    "checkout_instructions": "",
+    "admin_contact_url": "",
+    "community_url": "",
+    "wallet_addresses": [],
+    "warranty_requires_vouch": true,
+    "playful_mode": true,
+    "meme_gif_urls": [],
+    "language": "en",
+    "abandoned_cart_enabled": false,
+    "abandoned_cart_interval_minutes": 60,
+    "abandoned_cart_max_followups": 2,
+    "abandoned_cart_messages": [
+      "Your cart is still saved for you. If you want the smoothest checkout, open View Cart, review the recommended add-ons, then pick your payment method when you are ready.",
+      "Friendly last nudge: your cart is still waiting. Stock can move, so open View Cart soon if you want to keep these items and add any final upgrades before payment."
+    ]
+  }
+}
