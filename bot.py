@@ -29,7 +29,7 @@ from telegram.ext import (
     filters,
 )
 
-from storage import load_store_state, save_store_state, supabase_configured
+from storage import configured_store_db_path, load_store_state, save_store_state, supabase_configured
 
 
 logger = logging.getLogger(__name__)
@@ -209,8 +209,7 @@ class StoreDB:
 
     def save(self) -> None:
         with self.lock:
-            if supabase_configured():
-                save_store_state(self.data)
+            if supabase_configured() and save_store_state(self.data):
                 return
             self.path.parent.mkdir(parents=True, exist_ok=True)
             fd, temp_name = tempfile.mkstemp(prefix=self.path.name, suffix=".tmp", dir=self.path.parent or ".")
@@ -624,7 +623,7 @@ load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
 ADMIN_IDS = parse_admin_ids(os.getenv("ADMIN_IDS", ""))
 PAYMENT_METHODS = parse_payment_methods(os.getenv("PAYMENT_METHODS", ""))
-DB = StoreDB(os.getenv("STORE_DB_PATH", "store_db.json"))
+DB = StoreDB(str(configured_store_db_path()))
 ADMIN_CONTACT_URL = os.getenv("ADMIN_CONTACT_URL", "").strip()
 COMMUNITY_URL = os.getenv("COMMUNITY_URL", "").strip()
 CLOUDINARY_URL = os.getenv("CLOUDINARY_URL", "").strip()

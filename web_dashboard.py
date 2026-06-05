@@ -19,12 +19,12 @@ from dotenv import load_dotenv
 from flask import Flask, abort, flash, jsonify, redirect, render_template_string, request, session, url_for
 from telegram import Update as TelegramUpdate
 
-from storage import load_store_state, save_store_state, supabase_configured
+from storage import configured_store_db_path, load_store_state, save_store_state, supabase_configured
 
 
 load_dotenv()
 
-DB_PATH = Path(os.getenv("STORE_DB_PATH", "store_db.json"))
+DB_PATH = configured_store_db_path()
 BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
 DASHBOARD_PASSWORD = os.getenv("DASHBOARD_PASSWORD", "change-this-password")
 DASHBOARD_SECRET_KEY = os.getenv("DASHBOARD_SECRET_KEY", "change-this-secret-key")
@@ -432,8 +432,7 @@ def load_data() -> dict[str, Any]:
 
 
 def save_data(data: dict[str, Any]) -> None:
-    if supabase_configured():
-        save_store_state(data)
+    if supabase_configured() and save_store_state(data):
         return
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     fd, temp_name = tempfile.mkstemp(prefix=DB_PATH.name, suffix=".tmp", dir=DB_PATH.parent or ".")

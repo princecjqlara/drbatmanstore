@@ -1,11 +1,25 @@
 import json
+import logging
 import os
+import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
+
+
+logger = logging.getLogger(__name__)
+
+
+def configured_store_db_path() -> Path:
+    raw_path = os.getenv("STORE_DB_PATH", "").strip()
+    if raw_path:
+        return Path(raw_path)
+    if os.getenv("VERCEL", "").strip():
+        return Path(tempfile.gettempdir()) / "store_db.json"
+    return Path("store_db.json")
 
 
 def supabase_configured() -> bool:
@@ -67,11 +81,15 @@ def load_store_state(default_data: dict[str, Any], seed_path: Path | None = None
     if not supabase_configured():
         return None
     state_id = store_state_id()
-    rows = supabase_request(
-        "GET",
-        "/rest/v1/store_state",
-        query={"id": f"eq.{state_id}", "select": "data"},
-    )
+    try:
+        rows = supabase_request(
+            "GET",
+            "/rest/v1/store_state",
+            query={"id": f"eq.{state_id}", "select": "data"},
+        )
+    except RuntimeError as error:
+        logger.warning("Supabase load failed; falling back to local store state: %s", error)
+        return None
     if isinstance(rows, list) and rows:
         data = rows[0].get("data")
         if isinstance(data, dict):
@@ -81,12 +99,17 @@ def load_store_state(default_data: dict[str, Any], seed_path: Path | None = None
     return data
 
 
-def save_store_state(data: dict[str, Any]) -> None:
+def save_store_state(data: dict[str, Any]) -> bool:
     if not supabase_configured():
-        return
-    supabase_request(
-        "POST",
-        "/rest/v1/store_state",
-        {"id": store_state_id(), "data": data},
-        query={"on_conflict": "id"},
-    )
+        return False
+    try:
+        supabase_request(
+            "POST",
+            "/rest/v1/store_state",
+            {"id": store_state_id(), "data": data},
+            query={"on_conflict": "id"},
+        )
+    except RuntimeError as error:
+        logger.warning("Supabase save failed; store state was not persisted remotely: %s", error)
+        return False
+    return True
