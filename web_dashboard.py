@@ -26,6 +26,9 @@ DASHBOARD_SECRET_KEY = os.getenv("DASHBOARD_SECRET_KEY", "change-this-secret-key
 DASHBOARD_HOST = os.getenv("DASHBOARD_HOST", "127.0.0.1")
 DASHBOARD_PORT = int(os.getenv("DASHBOARD_PORT", "8080"))
 CLOUDINARY_URL = os.getenv("CLOUDINARY_URL", "").strip()
+CLOUDINARY_CLOUD_NAME = os.getenv("CLOUDINARY_CLOUD_NAME", "").strip()
+CLOUDINARY_API_KEY = os.getenv("CLOUDINARY_API_KEY", "").strip()
+CLOUDINARY_API_SECRET = os.getenv("CLOUDINARY_API_SECRET", "").strip()
 
 ORDER_STATUSES = {
     "pending_payment": "Pending payment",
@@ -146,6 +149,12 @@ def money(value: int) -> str:
 
 
 def cloudinary_config() -> dict[str, str] | None:
+    if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
+        return {
+            "cloud_name": CLOUDINARY_CLOUD_NAME,
+            "api_key": CLOUDINARY_API_KEY,
+            "api_secret": CLOUDINARY_API_SECRET,
+        }
     if not CLOUDINARY_URL:
         return None
     parsed = urllib.parse.urlparse(CLOUDINARY_URL)
@@ -2274,6 +2283,9 @@ def products():
                   <form method="post" action="{{ url_for('toggle_product', product_id=product.id) }}">
                     <button type="submit">{{ "Disable" if product.active else "Enable" }}</button>
                   </form>
+                  <form method="post" action="{{ url_for('delete_product', product_id=product.id) }}" onsubmit="return confirm('Delete this product from the store? Existing orders keep their item snapshot, but the product will be removed from catalog and upsells.');">
+                    <button class="danger" type="submit">Delete</button>
+                  </form>
                 </td>
               </tr>
               {% else %}
@@ -2406,6 +2418,28 @@ def toggle_product(product_id: str):
         flash("Product status updated.")
     else:
         flash("Product not found.")
+    return redirect(url_for("products"))
+
+
+@app.route("/products/<product_id>/delete", methods=["POST"])
+@login_required
+def delete_product(product_id: str):
+    data = load_data()
+    product = data.get("products", {}).pop(product_id, None)
+    if not product:
+        flash("Product not found.")
+        return redirect(url_for("products"))
+
+    for other_product in data.get("products", {}).values():
+        upsell_ids = other_product.get("upsell_ids", [])
+        if product_id in upsell_ids:
+            other_product["upsell_ids"] = [item for item in upsell_ids if item != product_id]
+            other_product["updated_at"] = now_iso()
+    for cart in data.get("carts", {}).values():
+        cart.pop(product_id, None)
+
+    save_data(data)
+    flash(f"Deleted product {product.get('name', product_id)}.")
     return redirect(url_for("products"))
 
 

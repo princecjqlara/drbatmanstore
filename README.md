@@ -31,7 +31,7 @@ Python Telegram bot with:
 1. Create a bot with BotFather and copy the bot token.
 2. Copy `.env.example` to `.env`.
 3. Fill in `BOT_TOKEN`, `ADMIN_IDS`, and `DASHBOARD_PASSWORD`.
-   Add `CLOUDINARY_URL` if you want receipts, vouches, and media replies stored in Cloudinary.
+   Add `CLOUDINARY_URL` if you want receipts, vouches, and media replies stored in Cloudinary. You can also use `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET` instead.
 4. Install dependencies:
 
 ```powershell
@@ -104,6 +104,14 @@ Dashboard actions:
 - `Bot Engagement`: configure language, social proof templates, GIF URLs, and abandoned-cart follow-up sequences.
 - `Process Orders`: lists recent orders and lets you mark them paid, processing, completed, or cancelled.
 - Order follow-up replies: open an order and send a bot follow-up back to the customer through Telegram, optionally with a GIF URL.
+
+## Vercel Hobby Notes
+
+The current `bot.py` runs Telegram long polling, which needs an always-on Python process. Vercel Functions are request-based and scale down when idle, so use a Telegram webhook endpoint for Vercel deployments or run the bot worker on an always-on host.
+
+Vercel Hobby cron jobs are useful for daily maintenance tasks only. They are not a keep-alive solution for a polling Telegram bot.
+
+`store_db.json` is good for local testing. For Vercel production, store live orders, customers, messages, receipts, and products in an external database such as Supabase because function filesystems are not persistent application storage.
 
 During product creation, the dashboard form includes:
 

@@ -619,9 +619,18 @@ DB = StoreDB(os.getenv("STORE_DB_PATH", "store_db.json"))
 ADMIN_CONTACT_URL = os.getenv("ADMIN_CONTACT_URL", "").strip()
 COMMUNITY_URL = os.getenv("COMMUNITY_URL", "").strip()
 CLOUDINARY_URL = os.getenv("CLOUDINARY_URL", "").strip()
+CLOUDINARY_CLOUD_NAME = os.getenv("CLOUDINARY_CLOUD_NAME", "").strip()
+CLOUDINARY_API_KEY = os.getenv("CLOUDINARY_API_KEY", "").strip()
+CLOUDINARY_API_SECRET = os.getenv("CLOUDINARY_API_SECRET", "").strip()
 
 
 def cloudinary_config() -> dict[str, str] | None:
+    if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
+        return {
+            "cloud_name": CLOUDINARY_CLOUD_NAME,
+            "api_key": CLOUDINARY_API_KEY,
+            "api_secret": CLOUDINARY_API_SECRET,
+        }
     if not CLOUDINARY_URL:
         return None
     parsed = urllib.parse.urlparse(CLOUDINARY_URL)
